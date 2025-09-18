@@ -266,6 +266,9 @@ def main():
                        font-size: 3rem; font-weight: 700; margin: 0;">
                 🗺️ Peta Risiko Stunting Kota Bogor
             </h1>
+            <p style="color: #666; font-size: 1.2rem; margin-top: 10px;">
+                Dashboard Interaktif untuk Monitoring dan Analisis Data Stunting
+            </p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -359,80 +362,84 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-    # Peta
-    st.markdown('<h2 class="section-header">🗺️ Peta Interaktif</h2>', unsafe_allow_html=True)
+    # Layout dengan kolom kiri untuk konten utama
+    col_left, col_right = st.columns([2, 1])
     
-    # Legend
-    st.markdown("""
-        <div class="legend-container">
-            <h4 style="margin-top: 0; color: #667eea;">📍 Legenda Peta</h4>
-            <div style="display: flex; justify-content: space-around;">
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 20px; height: 20px; background-color: #ff6b6b; border-radius: 50%; margin-right: 10px;"></div>
-                    <span>Kelurahan Berisiko</span>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 20px; height: 20px; background-color: #51cf66; border-radius: 50%; margin-right: 10px;"></div>
-                    <span>Kelurahan Tidak Berisiko</span>
+    with col_left:
+        # Peta
+        st.markdown('<h2 class="section-header">🗺️ Peta Interaktif</h2>', unsafe_allow_html=True)
+        
+        # Legend
+        st.markdown("""
+            <div class="legend-container">
+                <h4 style="margin-top: 0; color: #667eea;">📍 Legenda Peta</h4>
+                <div style="display: flex; justify-content: space-around;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="width: 20px; height: 20px; background-color: #ff6b6b; border-radius: 50%; margin-right: 10px;"></div>
+                        <span>Kelurahan Berisiko</span>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <div style="width: 20px; height: 20px; background-color: #51cf66; border-radius: 50%; margin-right: 10px;"></div>
+                        <span>Kelurahan Tidak Berisiko</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    map_obj = generate_map(df_filtered)
-    if map_obj:
-        st_folium(map_obj, height=500, width=None, key="peta_stunting")
-    else:
-        st.error("Tidak dapat menampilkan peta. Pastikan data koordinat tersedia.")
+        """, unsafe_allow_html=True)
+        
+        map_obj = generate_map(df_filtered)
+        if map_obj:
+            st_folium(map_obj, height=500, width=None, key="peta_stunting")
+        else:
+            st.error("Tidak dapat menampilkan peta. Pastikan data koordinat tersedia.")
 
-    # Visualisasi Distribusi
-    st.markdown('<h2 class="section-header">📊 Analisis Data</h2>', unsafe_allow_html=True)
-    
-    fig_pie, fig_bar_kec, fig_bar_kel = create_distribution_charts(df_filtered)
-    
-    if fig_pie:
-        # Row 1: Pie chart dan bar chart kecamatan
-        col1, col2 = st.columns(2)
+        # Visualisasi Distribusi
+        st.markdown('<h2 class="section-header">📊 Analisis Data</h2>', unsafe_allow_html=True)
         
-        with col1:
-            st.plotly_chart(fig_pie, use_container_width=True)
+        fig_pie, fig_bar_kec, fig_bar_kel = create_distribution_charts(df_filtered)
         
-        with col2:
+        if fig_pie:
+            # Pie chart
+            with st.container():
+                st.plotly_chart(fig_pie, use_container_width=True)
+            
+            # Bar chart kecamatan
             if fig_bar_kec is not None:
-                st.plotly_chart(fig_bar_kec, use_container_width=True)
+                with st.container():
+                    st.plotly_chart(fig_bar_kec, use_container_width=True)
+            
+            # Bar chart kelurahan
+            if fig_bar_kel is not None:
+                with st.container():
+                    st.plotly_chart(fig_bar_kel, use_container_width=True)
         
-        # Row 2: Bar chart kelurahan (full width)
-        if fig_bar_kel is not None:
-            st.plotly_chart(fig_bar_kel, use_container_width=True)
-    
-    # Tabel Detail
-    st.markdown('<h2 class="section-header">📋 Tabel Detail Data</h2>', unsafe_allow_html=True)
-    
-    # Summary table
-    summary_df = df_filtered.groupby(['namakecamatan', 'namakelurahan', 'risiko_stunting']).size().unstack(fill_value=0).reset_index()
-    summary_df['Total'] = summary_df.get('Berisiko', 0) + summary_df.get('Tidak Berisiko', 0)
-    summary_df = summary_df.sort_values('Total', ascending=False)
-    
-    st.dataframe(
-        summary_df,
-        use_container_width=True,
-        height=300
-    )
-    
-    # Download button
-    csv = summary_df.to_csv(index=False)
-    st.download_button(
-        label="📥 Download Data sebagai CSV",
-        data=csv,
-        file_name=f"data_stunting_summary_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-        mime="text/csv"
-    )
+        # Tabel Detail
+        st.markdown('<h2 class="section-header">📋 Tabel Detail Data</h2>', unsafe_allow_html=True)
+        
+        # Summary table
+        summary_df = df_filtered.groupby(['namakecamatan', 'namakelurahan', 'risiko_stunting']).size().unstack(fill_value=0).reset_index()
+        summary_df['Total'] = summary_df.get('Berisiko', 0) + summary_df.get('Tidak Berisiko', 0)
+        summary_df = summary_df.sort_values('Total', ascending=False)
+        
+        st.dataframe(
+            summary_df,
+            use_container_width=True,
+            height=300
+        )
+        
+        # Download button
+        csv = summary_df.to_csv(index=False)
+        st.download_button(
+            label="📥 Download Data sebagai CSV",
+            data=csv,
+            file_name=f"data_stunting_summary_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv"
+        )
 
     # Footer
     st.markdown("""
         <div style="text-align: center; padding: 30px 0 10px 0; color: #666;">
             <hr style="border: 1px solid #eee;">
-            <p>Peta Keluarga Risiko Stunting  - Kota Bogor </p>
+            <p>Dashboard Peta Risiko Stunting - Kota Bogor | 2024</p>
         </div>
     """, unsafe_allow_html=True)
 

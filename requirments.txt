@@ -3,3 +3,8 @@ pandas
 numpy
 scikit-learn
 matplotlib
+plotly
+folium
+tensorflow
+streamlit_folium
+pickle
