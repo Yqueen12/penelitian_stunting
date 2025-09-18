@@ -7,4 +7,3 @@ plotly
 folium
 tensorflow
 streamlit_folium
-pickle
